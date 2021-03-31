@@ -1,0 +1,126 @@
+
+// Softwareengineering WS 19/20
+// Team Rotmilan
+
+/*Node dient als SpeicherKlasse f�r ein Feld mit den Attributen int rowPos und int columnPos
+ * Wird verwendet von AStarAlgorithm als Nodes f�r die Wegfindung, liegen aber auch als Angaben f�r
+ * den n�chsten Zug in Path
+ * 
+ */
+package softwareengineering.rotmilan;
+
+
+import softwareengineering.Direction;
+
+public class Node {
+	
+	private int columnNumber;
+	private int rowNumber;
+	private boolean isBlocked;
+	private Direction direction;
+	private Path bestPath;
+	
+	private int gCost;
+	private int hCost;
+	private int fCost;
+	
+	private int color;
+	
+	private Node parent;
+
+	public Node(int rowNumber, int columnNumber, boolean isBlocked, Direction direction) {
+		this.columnNumber = columnNumber;
+		this.rowNumber = rowNumber;
+		this.isBlocked = isBlocked;
+		this.setDirection(direction);
+	}
+	
+	public Node(int rowNumber, int columnNumber, boolean isBlocked) {
+		this.columnNumber = columnNumber;
+		this.rowNumber = rowNumber;
+		this.isBlocked = isBlocked;
+	}
+	
+	public Node(int rowNumber, int columnNumber, boolean isBlocked, int color) {
+		this.columnNumber = columnNumber;
+		this.rowNumber = rowNumber;
+		this.isBlocked = isBlocked;
+		
+		this.setColor(color);
+	}
+	
+	
+	public void setIsBlocked(boolean isBlocked) {
+		this.isBlocked = isBlocked;
+	}
+	public boolean getIsBlocked() {
+		return isBlocked;
+	}
+	
+	public int getColumnNumber() {
+		return columnNumber;
+	}
+	public void setColumnNUmber(int columnNumber) {
+		this.columnNumber = columnNumber;
+	}
+	public int getRowNumber() {
+		return rowNumber;
+	}
+	public void setRowNUmber(int rowNumber) {
+		this.rowNumber = rowNumber;
+	}
+	public int getgCost() {
+		return gCost;
+	}
+	public void setgCost(int gCost) {
+		this.gCost = gCost;
+	}
+	public int gethCost() {
+		return hCost;
+	}
+	public void sethCost(int hCost) {
+		this.hCost = hCost;
+	}
+	public int getfCost() {
+		return fCost;
+	}
+	public void setfCost(int fCost) {
+		this.fCost = fCost;
+	}
+	public Node getParent() {
+		return parent;
+	}
+	public void setParent(Node parent) {
+		this.parent = parent;
+	}
+
+
+	public Direction getDirection() {
+		return direction;
+	}
+	public void setDirection(Direction direction) {
+		this.direction = direction;
+	}
+	
+	public void setPath(Path path) {
+		this.bestPath = path;
+	}
+	
+	public Path getPath() {
+		return bestPath;
+	}
+	
+	public Direction getNextDirectionByQueue() {
+		return bestPath.getNextDirectionByQueue();
+	}
+
+	public int getColor() {
+		return color;
+	}
+
+	public void setColor(int color) {
+		this.color = color;
+	}
+		
+		
+}

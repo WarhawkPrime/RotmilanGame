@@ -1,0 +1,427 @@
+package softwareengineering.rotmilan;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
+import softwareengineering.*;
+
+
+public class DWStrategy implements Strategy {
+
+	Game game = null;
+
+	int[][] gameBoard = null;
+	int boardRows;
+	int boardColumns;
+	int ownColor;
+	Node goalNode = null;
+	ArrayList<Node> ownStones = null;
+	ArrayList<GameObject> enemyStones = null;
+	AStarAlgorithm astar = new AStarAlgorithm();
+
+	int maxBoards = 5;
+	ArrayList<int[][]> boards = new ArrayList<>();
+	ArrayList<Node> enemyGoals = new ArrayList<>();
+	
+	int[] stratI = null;
+
+
+
+	public DWStrategy(int[][] board, int gameRows, int gameColumns, Node goalNode, ArrayList<Node> ownStonesWithoutGoal, ArrayList<GameObject> enemyStones, int ownColor, Game game, ArrayList<int[][]> boards ) {
+
+		this.gameBoard = board;
+		this.boardRows = gameRows;
+		this.boardColumns = gameColumns;
+		this.ownColor = ownColor;
+		this.goalNode = goalNode;
+		this.ownStones = ownStonesWithoutGoal;
+		this.enemyStones = enemyStones;
+
+		this.game = game;
+	}
+
+	public DWStrategy() {
+
+	}
+
+	public int analyze() {
+
+		AStarAlgorithm astar = new AStarAlgorithm();
+		
+		System.out.println(boards.size());		
+				
+		//Herazusfinden ob der Gegner zu unseren Tor will und dieses dann sch�tzen
+		int playerCount = game.getNumPlayers();
+
+
+		int playerArray[] = new int[playerCount]; 
+
+		//einmalig alle gegner Tore erstellen
+		if(enemyGoals.size() == 0) {
+			for(int row = 0; row < boardRows; row++) {
+				for(int col = 0; col < boardColumns; col++) {
+					if(boards.get(0)[row][col] < 0 && boards.get(0)[row][col] != -ownColor) {
+						Node enemyGoal = new Node(row, col, true, boards.get(0)[row][col]);
+						enemyGoals.add(enemyGoal);
+						
+						System.out.println("goal gefunden");
+						
+					}
+				}
+			}
+		}
+
+
+		if(boards.size() >= 2) {
+			
+			System.out.println("Board gr��er als 2");
+			
+			stratI = new int[maxBoards];
+			
+			for(int c = 0; c < boards.size() -1; c++) {
+				
+
+				for(int row = 0; row < boardRows; row++) {
+					for(int col = 0; col < boardColumns; col++) {
+
+						//ein Gegner hat sich von seiner alten Position bewegt
+						if((boards.get(c)[row][col] != ownColor && boards.get(c)[row][col] > 0) &&
+								boards.get(c)[row][col] != boards.get(c +1)[row][col] ) {
+
+							//welcher Gegner?
+							playerArray[playerArray.length] = boards.get(c)[row][col];
+							int goalNumber = -boards.get(c)[row][col];
+							
+							//h vom letzten Stand
+							Node enemyNode = new Node(row, col, true, -goalNumber);
+							
+							int hTOG = astar.calculateHeuristic(enemyNode, goalNode, boardRows, boardColumns);
+							int hTEG = astar.calculateHeuristic(enemyNode, getEnemyGoal(enemyNode, goalNumber), boardRows, boardColumns);
+							
+							//wohin?
+							int rowMod = 0;
+							int colMod = 0;;
+
+							
+							//========== UP ==========
+							rowMod = row -1;
+							if(rowMod == -1) {
+								rowMod = boardRows - 1;
+							}
+							
+							if(boards.get(c)[rowMod][col] == 0 ) {
+								if(boards.get(c +1)[rowMod][col] == playerArray[playerArray.length]) {
+									Node enemyTNode = new Node(rowMod, col, true);
+									
+									System.out.println("UP");
+									
+									int hToOwnGoal = astar.calculateHeuristic(enemyTNode, goalNode, boardRows, boardColumns);
+									int hToEnemyGoal = astar.calculateHeuristic(enemyTNode, getEnemyGoal(enemyTNode, goalNumber), boardRows, boardColumns); //tor des gegners
+									
+									if(hToOwnGoal < hTOG && hToEnemyGoal > hTEG) {
+										stratI[stratI.length] = 1;
+									}
+									else if(hToOwnGoal > hTOG && hToEnemyGoal < hTEG) {
+										stratI[stratI.length] = 0;
+									}
+								}
+							}
+							
+							//========== RIGHT ==========
+							colMod = col +1;
+							if(colMod > boardColumns) {
+								colMod = 0;
+							}
+							System.out.println(" Test for RIGHT");
+
+							
+							if(boards.get(c)[row][colMod] == 0 ) {
+								System.out.println("RIGHT war vorher 0");
+
+								if(boards.get(c +1)[row][colMod] == playerArray[playerArray.length]) {
+									Node enemyTNode = new Node(row, colMod, true);
+									
+									System.out.println("RIGHT");
+									
+									int hToOwnGoal = astar.calculateHeuristic(enemyTNode, goalNode, boardRows, boardColumns);
+									int hToEnemyGoal = astar.calculateHeuristic(enemyTNode, getEnemyGoal(enemyTNode, goalNumber), boardRows, boardColumns); //tor des gegners
+									
+									if(hToOwnGoal < hTOG && hToEnemyGoal > hTEG) {
+										stratI[stratI.length] = 1;
+									}
+									else if(hToOwnGoal > hTOG && hToEnemyGoal < hTEG) {
+										stratI[stratI.length] = 0;
+									}
+								}
+							}
+							
+							
+							//========== DOWN ==========
+							rowMod = row +1;
+							if(rowMod > boardRows) {
+								rowMod = 0;
+							}
+							
+							if(boards.get(c)[rowMod][col] == 0 ) {
+								if(boards.get(c +1)[rowMod][col] == playerArray[playerArray.length]) {
+									Node enemyTNode = new Node(rowMod, col, true);
+									
+									System.out.println("DOWN");
+									
+									int hToOwnGoal = astar.calculateHeuristic(enemyTNode, goalNode, boardRows, boardColumns);
+									int hToEnemyGoal = astar.calculateHeuristic(enemyTNode, getEnemyGoal(enemyTNode, goalNumber), boardRows, boardColumns); //tor des gegners
+									
+									if(hToOwnGoal < hTOG && hToEnemyGoal > hTEG) {
+										stratI[stratI.length] = 1;
+									}
+									else if(hToOwnGoal > hTOG && hToEnemyGoal < hTEG) {
+										stratI[stratI.length] = 0;
+									}
+								}
+							}
+							
+							
+							//========== LEFT ==========
+							colMod = col -1;
+							if(colMod == -1) {
+								colMod = boardColumns -1;
+							}
+							
+							if(boards.get(c)[row][colMod] == 0 ) {
+								if(boards.get(c +1)[row][colMod] == playerArray[playerArray.length]) {
+									Node enemyTNode = new Node(row, colMod, true);
+									
+									System.out.println("LEFT");
+									
+									int hToOwnGoal = astar.calculateHeuristic(enemyTNode, goalNode, boardRows, boardColumns);
+									int hToEnemyGoal = astar.calculateHeuristic(enemyTNode, getEnemyGoal(enemyTNode, goalNumber), boardRows, boardColumns); //tor des gegners
+									
+									if(hToOwnGoal < hTOG && hToEnemyGoal > hTEG) {
+										stratI[stratI.length] = 1;
+									}
+									else if(hToOwnGoal > hTOG && hToEnemyGoal < hTEG) {
+										stratI[stratI.length] = 0;
+									}
+								}
+							}
+						}
+						else {	//kein Unterschied festgestellt:
+							
+						}
+					}
+				}
+				//Durch Board n durch, n�chstes Board
+			}
+			//Alle Boards durch, hier jetzt den Vergleich weiter
+			int oGCount = 0;
+			int eGCount = 0;
+			
+			for(int i = 0; i < stratI.length; i++) {
+				if(stratI[i] == 0) {
+					eGCount ++;
+				}
+				else if(stratI[i] == 1) {
+					oGCount ++;
+				}
+			}
+			
+			if(oGCount > eGCount) {
+				stratI = null;
+				//System.out.println(1);
+				return 1;
+			}
+			else if(oGCount < eGCount) {
+				stratI = null;
+				//System.out.println(0);
+				return 0;
+			}
+		}
+		else {	//nur ein Board, kein Vergleich m�glich
+			return 3;
+		}
+		return 5;
+	}
+	
+	
+	public Move getMove() {
+		AStarAlgorithm astar = new AStarAlgorithm();
+
+		//Node goalNode = new Node(goalNode.getRowNumber(), goalNode.getColumnNumber(), false, null);	//goal
+		Node nodeToMove = null;	//welcher Stein soll whin bewegt werden
+		Node endNode = null;	//wohin soll der Stein bewegt werden
+		Path shortestPath = null;	//pfad zu berechnen
+		Direction direction = null;	//direction
+
+		//ziel bestimmen
+		endNode = goalNode;
+		//Stein bestimmen
+		nodeToMove = chooseStoneToMove(endNode, ownStones, gameBoard, boardRows, boardColumns, ownColor, astar);
+
+		//2: Pfad von Start zu Ziel bestimmen
+		//shortestPath = astar.findShortestPath(nodeToMove, endNode, gameBoard, boardRows, boardColumns, ownColor);
+		//3. Path der Node zuweisen
+		//nodeToMove.setPath(shortestPath);
+		//4. Queue sortieren
+		nodeToMove.setPath(astar.findShortestPath(nodeToMove, endNode, gameBoard, boardRows, boardColumns, ownColor));
+		
+		//! m�glicher fehler
+		nodeToMove.getPath().sortNodesToQueue(nodeToMove.getRowNumber(), nodeToMove.getColumnNumber() );
+		//5. Direction bekommen
+		direction = nodeToMove.getNextDirectionByQueue();
+
+
+		Move move = null;
+
+		//Abfrage ob direction 0 ist
+		if(direction == null) {
+			return move;
+		}
+		
+		if(direction == direction.UP) {
+			int row = nodeToMove.getRowNumber() - 1;
+			int column = nodeToMove.getColumnNumber();
+			
+			if(row == -1) {
+				row = boardRows - 1;
+			}
+			
+			if(gameBoard[row][column] != 0 && gameBoard[row][column] != -ownColor) {
+				direction = null;
+			}
+		}
+		else if(direction == direction.DOWN) {
+			int row = nodeToMove.getRowNumber() +1;
+			int column = nodeToMove.getColumnNumber();
+			
+			if(row > boardRows -1) {
+				row = 0;
+			}
+			
+			if(gameBoard[row][column] != 0 && gameBoard[row][column] != -ownColor) {
+				direction = null;
+			}
+			
+		}
+		else if(direction == direction.LEFT) {
+			int row = nodeToMove.getRowNumber();
+			int column = nodeToMove.getColumnNumber() -1;
+			
+			if(column == -1) {
+				column = boardColumns -1;
+			}
+			
+			if(gameBoard[row][column] != 0 && gameBoard[row][column] != -ownColor) {
+				direction = null;
+			}
+			
+		}
+		else if(direction == direction.RIGHT) {
+			int row = nodeToMove.getRowNumber();
+			int column = nodeToMove.getColumnNumber() +1;
+			
+			if(column > boardColumns -1) {
+				column = 0;
+			}
+			
+			if(gameBoard[row][column] != 0 && gameBoard[row][column] != -ownColor) {
+				direction = null;
+			}
+			
+		}
+			
+			
+		move = new Move(nodeToMove.getRowNumber(), nodeToMove.getColumnNumber(), direction);
+		return move;
+
+	}
+
+
+	//gibt dazugeh�riges Tor zur�ck
+	public Node getEnemyGoal(Node enemyNode, int goalNumber) {
+		for(Node goal : enemyGoals) {
+			if(goal.getColor() == goalNumber) {
+				return goal;
+			}
+		}
+		return null;
+	}
+
+
+
+
+
+
+
+
+
+	public Node chooseGoal(int goalRow, int goalColumn) {
+
+		return new Node(goalRow, goalColumn, false, null);
+	}
+
+
+
+
+
+	//aktuell: sucht den Stein der am n�chsten am Tor ist und sich mindestens ein Feld bewegen kann
+	public Node chooseStoneToMove(Node endNode, ArrayList<Node> listWithoutGoals, int[][] board, int gameRowsNumber, int gameColumnsNumber, int ownColor, AStarAlgorithm astar) {
+
+
+		//Priorit�ten setzten:
+		//1: Stein hat freie Bahn und den k�rzesten Weg zum Ziel
+		//2: Stein hat zwar keine freie Bahn aber kann den n�chsten Sinnvollen Schritt zum Ziel machen
+		//3: Stein hat keine freie Bahn und kann auch keinen sinnvollen Schritt machen und ist weiter vom Ziel Weg
+		//4: Stein kann sich nicht bewegen, dann ist es egal
+
+		Comparator<Node> comparator = new NodePathComparator();
+		Comparator<Node> turnedComparator = new NodeTurnedPathSizeComparator();
+		
+		PriorityQueue<Node> stoneQueueToGoal = new PriorityQueue<Node>(comparator);
+		PriorityQueue<Node> stoneQueueBlockedGoal = new PriorityQueue<Node>(turnedComparator);
+
+		//berechnen von h f�r jeden eigenen Stein zum Ziel und sortierung in die Queue
+		for(Node stone : ownStones) {
+			stone.setPath(astar.findShortestPath(stone, endNode, board, gameRowsNumber, gameColumnsNumber, ownColor));
+
+			if(stone.getPath().getArrayListPath().get(0).getRowNumber() == endNode.getRowNumber() && 
+					stone.getPath().getArrayListPath().get(0).getColumnNumber() == endNode.getColumnNumber() ) 
+			{
+
+				stoneQueueToGoal.add(stone);
+
+			}
+			else {
+				stoneQueueBlockedGoal.add(stone);
+			}
+		}
+
+		Node tempNode = null;
+		if(!stoneQueueToGoal.isEmpty()) {
+			tempNode = stoneQueueToGoal.poll();
+		}
+		else {
+			tempNode = stoneQueueBlockedGoal.poll();
+		}
+
+
+
+		return tempNode;
+	}
+
+
+	public boolean testForOptimalNextNode(Node currentNode) {
+
+		Node nextPlannedNode = currentNode.getPath().getNextNode(currentNode.getRowNumber(), currentNode.getColumnNumber());
+		if(nextPlannedNode == null) {
+			return false;
+		}
+		nextPlannedNode.setPath(astar.findShortestPath(nextPlannedNode, goalNode, gameBoard, boardRows, boardColumns, ownColor));
+
+		if(currentNode.getPath().getArrayListPath().size() > nextPlannedNode.getPath().getArrayListPath().size() ) {
+			return true;
+		}
+		return false;
+	}
+
+}

@@ -1,0 +1,6 @@
+- Wegfindungsalgorithmus (Beispielsweise anhand eines Graphens via Dijkstra)
+- korrekte Züge (bereits implementiert in RandomPlayer.java)
+- Reaktion auf gegnerische Spielzüge (Merken von Zügen und was der Gegner vor hat)
+- Stragien (defensive oder offensive) -> während der Laufzeit anpassen
+-abc
+

@@ -1,0 +1,369 @@
+
+// Softwareengineering WS 19/20
+// Team Rotmilan
+
+package softwareengineering.rotmilan;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.PriorityQueue;
+
+import softwareengineering.Direction;
+import softwareengineering.*;
+
+public class AStarAlgorithm {
+	
+	public AStarAlgorithm () {
+		
+	}
+
+
+	//main method to find the shortest Path in a 2D array
+		public Path findShortestPath(Node startNode, Node endNode, int[/*maxRows*/][/*maxCols*/] gameBoard, int gameRowNumber, int gameColumnNumber, int ownColor) {
+			
+			//kosten f�r einen Zug
+			int moveCost = 1;
+			
+			//Vorbereitung f�r den Pfad
+			ArrayList<Node> neighbours = new ArrayList<Node>();
+			Path foundPath;
+			
+			//Eine offene und eine geschlossene Liste
+			Comparator<Node> comparator = new NodeComparator();
+			PriorityQueue<Node> openQueue = new PriorityQueue<Node>(comparator);
+			//PriorityQueue<Node> closedQueue = new PriorityQueue<Node>(comparator);
+			ArrayList<Node> closedList = new ArrayList<Node>();
+			openQueue.clear();
+			//closedQueue.clear();
+			closedList.clear();
+			
+			//Start == Ziel? wenn ja w�re der stein in das Ziel gekommen
+			if(isGoal(startNode, endNode) == true) {
+				return null; 
+			}
+			
+			
+			//start in die offene Liste, f = 0
+			startNode.setfCost(0);
+			startNode.setgCost(0);
+			openQueue.add(startNode);
+			
+			//solange die offene Liste nicht leer ist
+			while( !openQueue.isEmpty()) {
+				
+				//currentNpode mit dem geringsten f aus der open Liste
+				Node currentNode = openQueue.poll();
+				
+				//ist currentNode unser Ziel?
+				if(currentNode.getParent() != null) {
+					if(isGoal(currentNode, endNode)) {
+						return foundPath = createPathToGoal(endNode);
+					}
+				}
+				
+				//closedQueue.add(currentNode);
+				closedList.add(currentNode);
+				
+				//alle m�glichen Nachbarn f�r curentNode finden
+				neighbours = findAllNeighbours(currentNode, gameBoard, gameRowNumber, gameColumnNumber, ownColor, moveCost);
+				
+				//Alle Nachbarn von current durchgehen
+				for(Node neighbour : neighbours) {
+					
+					//wenn der Neighbour in der closed List ist, ignorieren. Wenn nicht dann:
+					//if( isInQueue(neighbour, closedQueue) == false && closedQueue.contains(neighbour) == false ) {
+					if( isInList(neighbour, closedList) == false  ) {
+
+						//g, h und f berechnen
+						neighbour.setgCost(currentNode.getgCost() + moveCost);
+						neighbour.sethCost(calculateHeuristic(neighbour, endNode, gameRowNumber, gameColumnNumber));
+						neighbour.setfCost(neighbour.getgCost() + neighbour.gethCost());
+						
+						//wenn der Neighbour nicht in der openQueue ist
+						if( isInQueue(neighbour, openQueue) == false && openQueue.contains(neighbour) == false) {
+							neighbour.setParent(currentNode);
+							openQueue.add(neighbour);
+							
+							//Wenn der Nachbar das Ziel ist, erst hier da er erst jetzt einen parent hat
+							if(isGoal(neighbour, endNode)) {
+								return foundPath = createPathToGoal(neighbour);
+							}
+						}
+						//wenn die Node schon in der offenen Queue ist, testetn ob dieser Pfad zu der Node besser ist
+						else {
+							Node oldNode = takeCopyFromQueue(neighbour, openQueue);
+							if( neighbour.getfCost() < oldNode.getfCost()  ) {
+								oldNode.setfCost(neighbour.getfCost());
+								oldNode.sethCost(neighbour.gethCost());
+								oldNode.setgCost(neighbour.getgCost());
+								oldNode.setParent(neighbour.getParent());
+							}
+						}
+					}
+				}	
+			}
+			//return null;	//kein Pfad gefunden
+			Path alternativePath = createAltPath(closedList, startNode);
+			return alternativePath;
+		}
+		
+		
+		
+		//Calculates the manhatten heuristic distance between two points
+		public int calculateHeuristic(Node start, Node end, int gameRowsNumber, int gameColumnsNumber) {
+			int heuristicValue = 0;
+			int absoluteHorizontalValue;
+			int absoluteVerticalValue;
+			
+			
+			absoluteHorizontalValue = Math.abs(start.getColumnNumber() - end.getColumnNumber());
+			absoluteVerticalValue = Math.abs(start.getRowNumber() - end.getRowNumber() );
+			
+			if(absoluteHorizontalValue > (Math.floor( (gameColumnsNumber) / 2))) {
+				if(start.getColumnNumber() <= end.getColumnNumber() ) {
+					absoluteHorizontalValue = (start.getColumnNumber() - 0) + ((gameColumnsNumber) - end.getColumnNumber() ) ;
+				}
+				else if(start.getColumnNumber() >= end.getColumnNumber() ) {
+					absoluteHorizontalValue = (end.getColumnNumber() - 0) + ((gameColumnsNumber) - start.getColumnNumber() ) ;
+				}
+			}
+			if(absoluteVerticalValue > (Math.floor(gameRowsNumber / 2)) ) {
+				if(start.getRowNumber() <= end.getRowNumber()) {
+					absoluteVerticalValue = (start.getRowNumber() - 0) + ((gameRowsNumber) - end.getRowNumber()) ;
+				}
+				else if(start.getRowNumber() >= end.getRowNumber()) {
+					absoluteVerticalValue = (end.getRowNumber() - 0) + ((gameRowsNumber) - start.getRowNumber()) ;
+				}
+			}
+			heuristicValue = absoluteHorizontalValue + absoluteVerticalValue;
+			return heuristicValue;
+		}
+		
+		
+		
+		
+		//Methode um die Nachbarn einer Node zu bekommen
+		public ArrayList<Node> findAllNeighbours(Node currentNode, int[/*maxRows*/][/*maxCols*/] board, int gameRowNumber, int gameColumnNumber, int ownColor, int moveCost){
+			
+			int rowNumber;
+			int columnNumber;
+			int rowIndex = gameRowNumber - 1;
+			int columnIndex = gameColumnNumber -1;
+			
+			ArrayList<Node> neighbours = new ArrayList<Node>();
+
+			
+			//========== Upper Neighbour ==========
+			columnNumber = currentNode.getColumnNumber();
+			rowNumber = ((currentNode.getRowNumber() -1));
+			
+			if(rowNumber == -1)
+				rowNumber = rowIndex;
+
+			if( fieldIsBlocked(rowNumber, columnNumber, board, ownColor) == false ) {
+				Node upperNeighbour = createNewNode(rowNumber, columnNumber, board, ownColor, Direction.UP);
+				//upperNeighbour.setgCost(currentNode.getgCost() + moveCost);
+				//upperNeighbour.setParent(currentNode);
+				neighbours.add(upperNeighbour);
+			}
+			
+
+			//========== Right neighbour ==========
+			columnNumber = ((currentNode.getColumnNumber()  + 1));
+			rowNumber = currentNode.getRowNumber(); 
+			
+			if(columnNumber > columnIndex)
+				columnNumber = 0;
+			
+			if( fieldIsBlocked(rowNumber, columnNumber, board, ownColor) == false ) {
+				Node rightNeighbour = createNewNode(rowNumber, columnNumber, board, ownColor, Direction.RIGHT);
+				//rightNeighbour.setgCost(currentNode.getgCost() + moveCost);
+				//rightNeighbour.setParent(currentNode);
+				neighbours.add(rightNeighbour);
+			}
+			
+			
+			
+			//========== Lower neighbour ==========
+			columnNumber = currentNode.getColumnNumber();
+			rowNumber = ((currentNode.getRowNumber() + 1));
+
+			if(rowNumber > rowIndex)
+				rowNumber = 0;
+
+			if( fieldIsBlocked(rowNumber, columnNumber, board, ownColor) == false ) {
+				Node lowerNeighbour = createNewNode(rowNumber, columnNumber, board, ownColor, Direction.DOWN);
+				//lowerNeighbour.setgCost(currentNode.getgCost() + moveCost);
+				//lowerNeighbour.setParent(currentNode);
+				neighbours.add(lowerNeighbour);
+			}
+			
+			
+			//========== Left neighbour ==========
+			columnNumber = ((currentNode.getColumnNumber()  -1));
+			rowNumber = currentNode.getRowNumber(); 
+
+			if(columnNumber == -1)
+				columnNumber = columnIndex;
+
+			if( fieldIsBlocked(rowNumber, columnNumber, board, ownColor) == false ) {
+				Node leftNeighbour = createNewNode(rowNumber, columnNumber, board, ownColor, Direction.LEFT);
+				//leftNeighbour.setgCost(currentNode.getgCost() + moveCost);
+				//leftNeighbour.setParent(currentNode);
+				neighbours.add(leftNeighbour);
+			}
+			
+			
+			return neighbours;
+		}
+		
+		
+		//Methode um ein Feld zu �berpr�fen, ob es geblockt ist
+		public boolean fieldIsBlocked(int rowNumber, int columnNumber, int[/*maxRows*/][/*maxCols*/] board, int ownColor) {
+			
+			
+			//alles au�er 0 und -ownColor ist eine Blockade
+			if( board[rowNumber][columnNumber] != 0 && board[rowNumber][columnNumber] != -ownColor  ) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		
+		
+		//Methode um eine neue Node zu erstellen
+		public Node createNewNode(int rowNumber, int columnNumber, int [/*maxRows*/][/*maxCols*/] board, int ownColor, Direction direction ) {
+			
+			boolean isBlocked;
+			
+			//wenn es nicht 0 ist und nicht -ownColor ist, dann ist es eine Blockade
+			if( board[rowNumber][columnNumber] != 0 && board[rowNumber][columnNumber] != -ownColor ) {
+				isBlocked = true;
+			}
+			else {
+				isBlocked = false;
+			}
+			
+			Node node = new Node(rowNumber, columnNumber, isBlocked, direction);
+			return node;
+		}
+		
+		
+		//Methode um zu testen on die Node das Ziel ist
+		public boolean isGoal(Node currentNode, Node goal ) {
+			
+			//Ziel gefunden
+			if( currentNode.getRowNumber() == goal.getRowNumber() && currentNode.getColumnNumber() == goal.getColumnNumber() ) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		
+		//Methode um den Pfad von Start zu Ziel zu bekommen
+		public Path createPathToGoal(Node endNode) {
+			
+			ArrayList<Node> neighbours = new ArrayList<Node>();
+			Node tmpNode = endNode;
+			
+			while(tmpNode.getParent() != null) {
+				neighbours.add(tmpNode);
+				tmpNode = tmpNode.getParent();
+			}
+			
+			neighbours.add(tmpNode);
+			Path foundPath = new Path(neighbours);
+			return foundPath;
+		}
+		
+		//Methode um den Pfad von Start zu Ziel zu bekommen
+			public Path createPathToGoalWithoutStart(Node endNode) {
+				
+				ArrayList<Node> neighbours = new ArrayList<Node>();
+				Node tmpNode = endNode;
+				
+				while(tmpNode.getParent() != null) {
+					neighbours.add(tmpNode);
+					tmpNode = tmpNode.getParent();
+				}
+				
+				//neighbours.add(tmpNode); start wird hier nicht mehr gebraucht
+				Path foundPath = new Path(neighbours);
+				return foundPath;
+			}
+			
+		
+		
+		
+		//Methode die Pr�ft ob eine Node schon in einer Queue enthalten ist
+		public boolean isInQueue(Node nodeToTest, PriorityQueue<Node> toSearchedQueue) {
+			PriorityQueue<Node> tempQueue = new PriorityQueue<Node>(toSearchedQueue);
+			
+			for(int i = 0; i < tempQueue.size(); i++) {
+				Node tempNode = tempQueue.poll();
+				if( ( nodeToTest.getRowNumber() == tempNode.getRowNumber() ) && ( nodeToTest.getColumnNumber() == tempNode.getColumnNumber() ) ) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		
+		//Methode um die Kopie eines Elements aus einer Liste zu bekommen
+		public Node takeCopyFromQueue(Node nodeToCompare, PriorityQueue<Node> openQueue) {
+			
+			PriorityQueue<Node> tempQueue = new PriorityQueue<Node>(openQueue);
+			
+			for(int i = 0; i < tempQueue.size(); i++) {
+				Node tempNode = tempQueue.poll();
+				if( ( nodeToCompare.getRowNumber() == tempNode.getRowNumber() ) && ( nodeToCompare.getColumnNumber() == tempNode.getColumnNumber() ) ) {
+					return tempNode;
+				}
+			}
+			return null;
+		}
+		
+		
+		public boolean isInList(Node nodeToSearchFor, ArrayList<Node> closedList) {
+			for(Node closedNode : closedList) {
+				if( (nodeToSearchFor.getRowNumber() == closedNode.getRowNumber()) && (nodeToSearchFor.getColumnNumber() == closedNode.getColumnNumber())) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		
+		public Path createAltPath(ArrayList<Node> closedList, Node startNode) {
+		
+			
+			Comparator<Node> comparator = new NodeComparator();		
+			
+			int tmpH = 1000000;
+			Node tmpEndNode = null;
+			for(Node node : closedList) {
+				if(node.getRowNumber() == startNode.getRowNumber() && node.getColumnNumber() == startNode.getColumnNumber()) {
+					continue;
+				}
+				else if(node.gethCost() < tmpH) {
+					tmpH = node.gethCost();
+					tmpEndNode = node;
+				}
+			}
+			
+			if(closedList.size() == 1) {
+				Path altPath = createPathToGoal(startNode);
+				return altPath;
+			}
+			
+			Path altPath = createPathToGoal(tmpEndNode);
+			return altPath;
+		}
+		
+		
+	}

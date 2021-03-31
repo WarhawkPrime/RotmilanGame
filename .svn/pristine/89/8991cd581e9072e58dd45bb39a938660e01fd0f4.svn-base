@@ -1,0 +1,111 @@
+// Softwareengineering WS 19/20
+// Team Rotmilan
+
+/*path dient als Klasse um von AStarAlgorithm mit den einzelnen Schritten als k�rzesten Pfad
+ * zum Ziel zur�ckgegeben zu werden
+ * Dabei wird ein path in ein GameObject gespeichert, wenn f�r dieses GameObject der k�rzestete Pfad
+ * erfragt wurde
+ * Innerhalb von path gibt es getter-Methoden, die zb den n�chsten geplanten Zug zur�ckgeben, 
+ * abhngig von der aktuellen Position des Steins
+ * 
+ * 
+ */
+
+
+package softwareengineering.rotmilan;
+
+import softwareengineering.*;
+
+import java.util.ArrayList;
+import java.util.PriorityQueue;
+
+public class Path {
+
+	private ArrayList<Node> path = new ArrayList<Node>();
+
+	NodeGComparator nodeComparator = new NodeGComparator();
+	private PriorityQueue<Node> bestpathQueue = new PriorityQueue<Node>(nodeComparator);
+
+	public Path(ArrayList<Node> path) {
+		this.path = path;
+		//sortNodesToQueue();
+	}
+
+	public ArrayList<Node> getArrayListPath() {
+		return path;
+	}
+	
+	public int getPathLength() {
+		return path.size();
+	}
+
+	public Node getNextNode( int ownRowNumber, int ownColumnNumber ) {
+
+		if(path.size() == 1 ) {
+			return null;
+		}
+		else {
+			for(int j = 0; j < path.size(); j++) {
+				if(path.get(j).getParent().getColumnNumber() == ownColumnNumber && path.get(j).getParent().getRowNumber() == ownRowNumber ) {
+					return path.get(j);
+				}
+			}
+		}
+		return null;
+	}
+
+	
+	//Methode die die Liste zur Queue bringt
+	public void sortNodesToQueue(int ownRowNumber, int ownColumnNumber) {
+		//start aus der queue raussortieren, start ist die node pos der eigenen Node, muss �bergeben werden
+		for(Node node : path) {
+			if(node.getRowNumber() == ownRowNumber && node.getColumnNumber() == ownColumnNumber ) {
+				continue;
+			}
+			bestpathQueue.add(node);
+		}
+	}
+	
+	//testet node auf h�chste g kosten, sollte das Ziel sein
+	public boolean hasHighestG(Node nodeToTest) {
+		for(Node node : path) {
+			if(nodeToTest.getgCost() < node.getgCost() ) {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	public Direction getNextDirectionByQueue() {
+		if( ! bestpathQueue.isEmpty() ) {
+			return bestpathQueue.poll().getDirection();
+		}
+		return null;
+	}
+
+
+	public Direction getNextDirection(int ownXPos, int ownYPos) {
+		if(path.size() == 1 ) {
+			return null;
+		}
+		else {
+			for(int j = 0; j < path.size(); j++) {
+				if(path.get(j).getParent().getColumnNumber() == ownXPos && path.get(j).getParent().getRowNumber() == ownYPos ) {
+					return path.get(j).getDirection();
+				}
+			}
+		}
+		return null;
+	}
+	
+	
+	public PriorityQueue<Node> getQueue() {
+		return bestpathQueue;
+	}
+
+	
+	//vergleiche h von start zu ziel / 2 mit anzahl knoten im Pfad. 
+	//wenn anzahl knoten im Pfad < h(start zu ziel) :
+	//	stein ist geblockt, anderen Stein nehmen
+
+}
